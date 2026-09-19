@@ -25,7 +25,7 @@ nome. Mesmo padrão de disciplina de fork já usado em `strix/CLAUDE.md`.
 
 ## Remotos configurados
 
-- `origin` → nosso fork (`angelotieres/prowler`, onde fazemos push)
+- `origin` → nosso fork (`Crinos-Cybersecurity/prowler`, onde fazemos push)
 - `upstream` → repositório oficial do Prowler — só pull/fetch, nunca push
 
 ## O que foi customizado em relação ao upstream
