@@ -71,6 +71,9 @@ export default async function RootLayout({
   let hasCompletedScan = true;
   // Tri-state: true = has providers, false = zero providers, undefined = fetch failed (gate fails open).
   let hasProviders: boolean | undefined = false;
+  // Scopes the onboarding steps' local markers, so resolving them for one
+  // tenant does not silence them for another.
+  let tenantId: string | null = null;
 
   if (cloudEnabled) {
     const [providersData, scansByState] = await Promise.all([
@@ -86,6 +89,7 @@ export default async function RootLayout({
     hasProviders = Array.isArray(providersData?.data)
       ? providersData.data.length > 0
       : undefined;
+    tenantId = (await auth())?.tenantId ?? null;
   }
 
   const registryEligible =
@@ -118,7 +122,7 @@ export default async function RootLayout({
             <>
               <OnboardingGate hasProviders={hasProviders} />
               {/* Single mount point so the watcher survives post-connect navigation. */}
-              <OnboardingCheckpointWatcher />
+              <OnboardingCheckpointWatcher tenantId={tenantId} />
               {/* Persistent banner shown only while a guided sequence is active. */}
               <OnboardingSequenceBanner hasCompletedScan={hasCompletedScan} />
             </>
