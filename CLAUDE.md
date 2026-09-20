@@ -71,10 +71,61 @@ upstream diretamente — mesma disciplina do `strix/CLAUDE.md`.
   técnica MITRE ATT&CK Cloud fica por conta da camada de correlação do
   IronBOT (`app/domain/vulnerability_taxonomy.py`), não do Prowler.
 
-## Instalação na instância "cloud"
+## Instalação na instância "cloud" — **a partir DESTE fork**
 
-`pip install prowler` (ou imagem Docker oficial, se a instalação via
-pip exigir dependências de sistema problemáticas — checar a
-documentação de instalação real do fork no momento do deploy, não
-assumir). Executado como subprocesso de vida curta pelo worker, nunca
+`python3.12 -m venv /opt/prowler-venv && /opt/prowler-venv/bin/pip
+install -e /opt/prowler`, onde `/opt/prowler` é o código deste
+submódulo copiado por `rsync`. **Nunca `pip install prowler` do PyPI.**
+Passo a passo em `backend/infra/deploy/DEPLOY.md`, seção 8.
+
+Por que instalar do fork mesmo sem customização de código hoje:
+
+- A versão em produção passa a ser a FIXADA no ponteiro de submódulo do
+  repo coordenador. Com PyPI, cada rebuild da máquina puxaria uma versão
+  nova em silêncio — com checks adicionados, removidos ou alterados,
+  mudando o que o cliente vê sem ninguém decidir nada.
+- Qualquer check próprio que venha a ser adicionado aqui só executa se o
+  binário vier daqui. Do contrário fica em código morto.
+
+**VENV DEDICADO, não compartilhado com o Cartography.** Os dois não
+convivem: este projeto fixa versão exata (`==`) de dezenas de pacotes e
+em pelo menos 9 deles a versão fixada é mais baixa que o piso que o
+Cartography exige (`azure-mgmt-containerservice` ==34.1.0 vs >=41.0.0,
+`azure-mgmt-network` ==28.1.0 vs >=31.0.0, `okta` ==3.4.2 vs >=3.4.4,
+entre outros). Não existe resolução possível.
+
+Python **3.12**: este projeto exige `>=3.10,<3.14` e o Cartography
+`>=3.11`. Executado como subprocesso de vida curta pelo worker, nunca
 como serviço de longa duração.
+
+### Check próprio: `--checks-folder`, sem tocar no fork
+
+O Prowler aceita `--checks-folder` (`-x`) apontando um diretório
+EXTERNO de checks — ele copia cada subdiretório para dentro da árvore em
+tempo de execução e remove depois. Confirmado funcionando na nossa
+imagem: um check colocado ali aparece listado ao lado dos nativos.
+
+**Este é o caminho preferido para cobrir lacuna do upstream**, porque os
+checks ficam no NOSSO repositório e o fork segue em diff zero. Convenção
+obrigatória: o nome do diretório precisa começar com o nome do serviço
+(`ssm_parameter_no_plaintext_secrets` → serviço `ssm`), e dentro dele
+vão `__init__.py`, `<nome>.py` e `<nome>.metadata.json`.
+
+Editar arquivo deste fork é o ÚLTIMO recurso — e, quando inevitável,
+acompanhado de PR upstream, para que o diff tenha rota de saída em vez
+de virar dívida permanente.
+
+**Em uso hoje**, em `backend/infra/deploy/cloud/checks/` (ver o
+`README.md` de lá para o diagnóstico completo de cada um):
+
+| Check | Lacuna do upstream que cobre |
+|---|---|
+| `ssm_parameter_no_plaintext_secrets` | Não existe NENHUM check de Parameter Store. Nunca lê o valor do parâmetro: classifica por nome e tipo, com `ssm:DescribeParameters` apenas. |
+| `ssm_document_secrets_ironbot` | `ssm_document_secrets` é falso negativo — reporta PASS em documento com `AWS_SECRET_ACCESS_KEY` visível, em YAML e em JSON. |
+
+Duas armadilhas do validador de metadata, ambas já custaram uma rodada:
+`RelatedUrl` **precisa** ser string vazia (campo deprecado) e
+`Remediation.Recommendation.Url` só aceita vazio ou
+`https://hub.prowler.com/...`. Nossos checks não estão no Hub, então
+vazio é a opção honesta e o link real vai para `AdditionalURLs`, que não
+é validado.
