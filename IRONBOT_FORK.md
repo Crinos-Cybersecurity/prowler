@@ -1,27 +1,38 @@
 # prowler (fork interno)
 
-**Este arquivo está versionado à força** (`git add -f`): o upstream do
-Prowler lista `CLAUDE.md` no próprio `.gitignore` (linha 157), então
-sem o `-f` ele existiria só na máquina de quem o criou e sumiria em
-qualquer clone novo — **sem aparecer no `git status`**, que é o que o
-torna traiçoeiro. Foi exatamente o que aconteceu antes desta correção.
-O nome foi mantido (em vez de renomear pra `IRONBOT_FORK.md`, como em
-`cloud-tools/cartography/`) porque `CLAUDE.md` é o único nome que o
-Claude Code carrega automaticamente ao abrir uma sessão nesta pasta.
-
-Duas consequências práticas, pra não gerar dúvida depois:
-- **O `-f` só é necessário na PRIMEIRA vez.** `.gitignore` só vale pra
-  arquivo não rastreado; uma vez commitado, alterações futuras aparecem
-  no `git status` e entram com `git add` normal.
-- **Risco residual**: se o upstream um dia adicionar um `CLAUDE.md`
-  próprio, haverá conflito no `git merge upstream/main`. É um arquivo de
-  documentação, então resolver é trivial — mas convém saber por quê.
+> Carregado automaticamente pelo OpenCode via `instructions` no `opencode.json` deste repo.
 
 Este diretório é um FORK do Prowler open source, upstream oficial
 `prowler-cloud/prowler` (https://github.com/prowler-cloud/prowler).
 Licença **Apache License 2.0** — confirmada lendo o arquivo `LICENSE`
 real do repositório no momento do fork (2026-09-16), não assumida por
-nome. Mesmo padrão de disciplina de fork já usado em `strix/CLAUDE.md`.
+nome. Mesmo padrão de disciplina de fork já usado em
+`strix/IRONBOT_FORK.md`.
+
+## Por que este arquivo se chama `IRONBOT_FORK.md` (histórico do nome)
+
+O nome original era `CLAUDE.md`, versionado **à força** (`git add -f`)
+porque o upstream lista `CLAUDE.md` no próprio `.gitignore` (linha 157)
+e o gera por symlink a partir do `AGENTS.md` dele via `skills/setup.sh`.
+
+A migração para o OpenCode (23/09/2026) quebrou esse arranjo: o OpenCode
+carrega o `AGENTS.md` do diretório de trabalho e dos ancestrais dele, e
+só usa `CLAUDE.md` como *fallback* quando **não existe** `AGENTS.md` no
+mesmo diretório — "the first matching file wins in each category"
+(https://opencode.ai/docs/rules/). Como o upstream do Prowler já tem
+`AGENTS.md`, e o nosso é byte a byte idêntico ao dele (mesmo blob Git),
+o nosso `CLAUDE.md` deixou de ser lido automaticamente.
+
+Correção (mesma já aplicada em `strix/`, commit `06018ba`): renomear
+para `IRONBOT_FORK.md` e apontar para ele no `opencode.json` deste repo,
+via `instructions`. Duas vantagens:
+
+- **`git add -f` não é mais necessário** — o `.gitignore` do upstream
+  ignora `CLAUDE.md`/`GEMINI.md`/`.github/copilot-instructions.md`, mas
+  **não** `IRONBOT_FORK.md`, então o arquivo aparece no `git status`
+  normal e não some em clone novo.
+- **Sem risco de conflito** se o upstream um dia versionar um `CLAUDE.md`
+  próprio (que era o risco residual do nome antigo).
 
 ## Remotos configurados
 
@@ -47,11 +58,11 @@ customizar algo (ex.: um check novo específico do IronBOT), preferir
 isolar como um plugin/check próprio na estrutura de extensão que o
 Prowler já oferece (`prowler/providers/aws/services/.../checks/`,
 plugável sem editar arquivo existente) em vez de editar arquivo
-upstream diretamente — mesma disciplina do `strix/CLAUDE.md`.
+upstream diretamente — mesma disciplina do `strix/IRONBOT_FORK.md`.
 
 ## Integração com o resto do projeto
 
-- **Papel no pipeline de nuvem** (ver `backend/CLAUDE.md`, seção
+- **Papel no pipeline de nuvem** (ver `backend/AGENTS.md`, seção
   "Correlação de cadeia de ataque em nuvem (AWS) — MVP"): gera o
   snapshot estruturado de segurança AWS (IAM, S3, rede, etc.) — a
   PRIMEIRA das duas fontes de dado que alimentam a correlação (a
